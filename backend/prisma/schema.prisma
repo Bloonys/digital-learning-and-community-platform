@@ -1,7 +1,6 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
+// =====================
+// GENERATOR & DATASOURCE
+// =====================
 
 generator client {
   provider = "prisma-client-js"
@@ -12,22 +11,201 @@ datasource db {
   provider = "postgresql"
 }
 
-model User {
- id        String   @id @default(uuid())
- email     String   @unique
- password  String
- name      String?
- createdAt DateTime @default(now())
+// =====================
+// ENUMS
+// =====================
 
- posts     Post[]
+enum Role {
+  STUDENT
+  MENTOR
+  ENTREPRENEUR
+  ADMIN
 }
 
-model Post {
- id        String   @id @default(uuid())
- title     String
- content   String
- createdAt DateTime @default(now())
+enum PostStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
 
- authorId  String
- author    User @relation(fields: [authorId], references: [id])
+enum NotificationType {
+  LIKE
+  COMMENT
+  FOLLOW
+  SYSTEM
+}
+
+// =====================
+// USER
+// =====================
+
+model User {
+  id          String    @id @default(cuid())
+  email       String    @unique
+  username    String    @unique
+  password    String
+  name        String
+  role        Role      @default(STUDENT)
+
+  avatarUrl   String?
+  bio         String?
+  location    String?
+  website     String?
+
+  // Social links
+  linkedin    String?
+  twitter     String?
+  github      String?
+
+  onboarded   Boolean   @default(false)
+
+  posts       Post[]
+  comments    Comment[]
+  likes       Like[]
+  bookmarks   Bookmark[]
+
+  following   Follow[]  @relation("following")
+  followers   Follow[]  @relation("followers")
+
+  notifications Notification[]
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+// =====================
+// FOLLOW
+// =====================
+
+model Follow {
+  id           String @id @default(cuid())
+
+  follower     User   @relation("following", fields: [followerId], references: [id], onDelete: Cascade)
+  followerId   String
+
+  following    User   @relation("followers", fields: [followingId], references: [id], onDelete: Cascade)
+  followingId  String
+
+  createdAt    DateTime @default(now())
+
+  @@unique([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+}
+
+// =====================
+// POST
+// =====================
+
+model Post {
+  id          String      @id @default(cuid())
+  title       String
+  slug        String      @unique
+  summary     String?     @db.Text
+  content     String      @db.Text
+
+  status      PostStatus  @default(PUBLISHED)
+  viewCount   Int         @default(0)
+  hotScore    Float       @default(0)
+
+  imageUrl    String?
+  images      String[]    // gallery support
+
+  author      User        @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  authorId    String
+
+  tags        Tag[]       // many-to-many
+  comments    Comment[]
+  likes       Like[]
+  bookmarks   Bookmark[]
+
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+// =====================
+// COMMENT
+// =====================
+
+model Comment {
+  id        String   @id @default(cuid())
+  content   String   @db.Text
+
+  isDeleted Boolean  @default(false)
+
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  authorId  String
+
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId    String
+
+  parentId  String?
+  parent    Comment? @relation("CommentToReplies", fields: [parentId], references: [id])
+  replies   Comment[] @relation("CommentToReplies")
+
+  createdAt DateTime @default(now())
+}
+
+// =====================
+// LIKE
+// =====================
+
+model Like {
+  id        String   @id @default(cuid())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId    String
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, postId])
+}
+
+// =====================
+// BOOKMARK
+// =====================
+
+model Bookmark {
+  id        String   @id @default(cuid())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId    String
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, postId])
+}
+
+// =====================
+// TAG
+// =====================
+
+model Tag {
+  id        String   @id @default(cuid())
+  name      String   @unique
+
+  posts     Post[]
+}
+
+// =====================
+// NOTIFICATION
+// =====================
+
+model Notification {
+  id        String            @id @default(cuid())
+
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+
+  type      NotificationType  @default(SYSTEM)
+  message   String
+  isRead    Boolean           @default(false)
+
+  createdAt DateTime          @default(now())
 }

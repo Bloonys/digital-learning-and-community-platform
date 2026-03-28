@@ -1,9 +1,9 @@
 {
   "scripts": {
-  "start": "node dist/main.js",
-  "start:dev": "ts-node src/main.ts",
-  "build": "tsc"
-}, 
+    "start": "node dist/main.js",
+    "start:dev": "ts-node src/main.ts",
+    "build": "tsc"
+  },
   "dependencies": {
     "@nestjs/common": "^11.1.17",
     "@nestjs/config": "^4.0.3",
@@ -24,6 +24,7 @@
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",
     "@types/node": "^25.5.0",
+    "@types/passport-jwt": "^4.0.1",
     "prisma": "^7.5.0",
     "ts-node": "^10.9.2",
     "typescript": "^6.0.2"
